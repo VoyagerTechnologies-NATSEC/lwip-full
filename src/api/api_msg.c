@@ -177,20 +177,14 @@ recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p,
   LWIP_ASSERT("recv_udp must have a pcb argument", pcb != NULL);
   LWIP_ASSERT("recv_udp must have an argument", arg != NULL);
   conn = (struct netconn *)arg;
-
-  if (conn == NULL) {
-    pbuf_free(p);
-    return;
-  }
-
   LWIP_ASSERT("recv_udp: recv for wrong pcb!", conn->pcb.udp == pcb);
 
 #if LWIP_SO_RCVBUF
   SYS_ARCH_GET(conn->recv_avail, recv_avail);
-  if (!sys_mbox_valid(&conn->recvmbox) ||
+  if ((conn == NULL) || !sys_mbox_valid(&conn->recvmbox) ||
       ((recv_avail + (int)(p->tot_len)) > conn->recv_bufsize)) {
 #else  /* LWIP_SO_RCVBUF */
-  if (!sys_mbox_valid(&conn->recvmbox)) {
+  if ((conn == NULL) || !sys_mbox_valid(&conn->recvmbox)) {
 #endif /* LWIP_SO_RCVBUF */
     pbuf_free(p);
     return;
@@ -477,6 +471,8 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
   struct netconn *newconn;
   struct netconn *conn = (struct netconn *)arg;
 
+  LWIP_DEBUGF(API_MSG_DEBUG, ("accept_function: newpcb->tate: %s\n", tcp_debug_state_str(newpcb->state)));
+
   if (conn == NULL) {
     return ERR_VAL;
   }
@@ -493,8 +489,6 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
     }
     return ERR_VAL;
   }
-
-  LWIP_DEBUGF(API_MSG_DEBUG, ("accept_function: newpcb->tate: %s\n", tcp_debug_state_str(newpcb->state)));
 
   /* We have to set the callback here even though
    * the new socket is unknown. newconn->socket is marked as -1. */
@@ -1409,7 +1403,7 @@ lwip_netconn_do_send(void *m)
 #endif
 #if LWIP_UDP
       case NETCONN_UDP:
-#if LWIP_CHECKSUM_ON_COPY
+#if LWIP_CHECKSUM_ON_COPY && CHECKSUM_GEN_UDP
         if (ip_addr_isany(&msg->msg.b->addr) || IP_IS_ANY_TYPE_VAL(msg->msg.b->addr)) {
           msg->err = udp_send_chksum(msg->conn->pcb.udp, msg->msg.b->p,
             msg->msg.b->flags & NETBUF_FLAG_CHKSUM, msg->msg.b->toport_chksum);

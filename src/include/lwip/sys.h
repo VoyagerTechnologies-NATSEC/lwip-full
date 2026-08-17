@@ -83,6 +83,10 @@ typedef u8_t sys_mbox_t;
 
 #else /* NO_SYS */
 
+#if defined(CMSIS_PROT)
+#include "hal/hal.h"
+#endif
+
 /** Return code for timeouts from sys_arch_mbox_fetch and sys_arch_sem_wait */
 #define SYS_ARCH_TIMEOUT 0xffffffffUL
 
@@ -93,7 +97,6 @@ typedef u8_t sys_mbox_t;
 
 #include "lwip/err.h"
 #include "arch/sys_arch.h"
-
 /** Function prototype for thread functions */
 typedef void (*lwip_thread_fn)(void *arg);
 
@@ -256,6 +259,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg);
  * @param msg message to post (ATTENTION: can be NULL)
  */
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg);
+err_t sys_mbox_trypost_isr(sys_mbox_t *mbox, void *msg);
 /**
  * @ingroup sys_mbox
  * Wait for a new message to arrive in the mbox
@@ -347,7 +351,9 @@ u32_t sys_jiffies(void);
  * Returns the current time in milliseconds,
  * may be the same as sys_jiffies or at least based on it.
  */
-u32_t sys_now(void);
+
+#define sys_now() (xTaskGetTickCount() * portTICK_PERIOD_MS)
+//u32_t sys_now(void);
 
 /* Critical Region Protection */
 /* These functions must be implemented in the sys_arch.c file.
@@ -369,7 +375,11 @@ u32_t sys_now(void);
  * type sys_prot_t. If a particular port needs a different implementation, then
  * this macro may be defined in sys_arch.h.
  */
+#if defined(CMSIS_PROT)
+#define SYS_ARCH_DECL_PROTECT(lev) psr_t lev
+#else
 #define SYS_ARCH_DECL_PROTECT(lev) sys_prot_t lev
+#endif
 /**
  * @ingroup sys_prot
  * SYS_ARCH_PROTECT
@@ -381,7 +391,11 @@ u32_t sys_now(void);
  * which should be implemented in sys_arch.c. If a particular port needs a
  * different implementation, then this macro may be defined in sys_arch.h
  */
+#if defined(CMSIS_PROT)
+#define SYS_ARCH_PROTECT(lev) lev = HAL_disable_interrupts()
+#else
 #define SYS_ARCH_PROTECT(lev) lev = sys_arch_protect()
+#endif
 /**
  * @ingroup sys_prot
  * SYS_ARCH_UNPROTECT
@@ -392,9 +406,13 @@ u32_t sys_now(void);
  * sys_arch.c. If a particular port needs a different implementation, then
  * this macro may be defined in sys_arch.h
  */
+#if defined(CMSIS_PROT)
+#define SYS_ARCH_UNPROTECT(lev) HAL_restore_interrupts(lev)
+#else
 #define SYS_ARCH_UNPROTECT(lev) sys_arch_unprotect(lev)
 sys_prot_t sys_arch_protect(void);
 void sys_arch_unprotect(sys_prot_t pval);
+#endif
 
 #else
 

@@ -88,6 +88,8 @@ err_t etharp_request(struct netif *netif, const ip4_addr_t *ipaddr);
 #define etharp_gratuitous(netif) etharp_request((netif), netif_ip4_addr(netif))
 void etharp_cleanup_netif(struct netif *netif);
 
+void etharp_free_entry(int i); /* Needed for NTM flush command */
+
 #if ETHARP_SUPPORT_STATIC_ENTRIES
 err_t etharp_add_static_entry(const ip4_addr_t *ipaddr, struct eth_addr *ethaddr);
 err_t etharp_remove_static_entry(const ip4_addr_t *ipaddr);

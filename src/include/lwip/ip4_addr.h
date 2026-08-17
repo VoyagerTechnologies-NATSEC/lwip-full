@@ -126,12 +126,20 @@ struct netif;
 #define IPADDR2_COPY(dest, src) SMEMCPY(dest, src, sizeof(ip4_addr_t))
 #endif
 
+#if defined(_ZL303XX_MIV)
+#define ip4_addr_copy(dest, src) SMEMCPY(&((dest).addr), &((src).addr), sizeof((src).addr))
+/** Safely copy one IP address to another (src may be NULL) */
+#define ip4_addr_set(dest, src) ((dest)->addr = \
+                                    ((src) == NULL ? 0 : \
+                                    (src)->addr))
+#else
 /** Copy IP address - faster than ip4_addr_set: no NULL check */
 #define ip4_addr_copy(dest, src) ((dest).addr = (src).addr)
 /** Safely copy one IP address to another (src may be NULL) */
 #define ip4_addr_set(dest, src) ((dest)->addr = \
                                     ((src) == NULL ? 0 : \
                                     (src)->addr))
+#endif
 /** Set complete address to zero */
 #define ip4_addr_set_zero(ipaddr)     ((ipaddr)->addr = 0)
 /** Set address to IPADDR_ANY (no need for lwip_htonl()) */

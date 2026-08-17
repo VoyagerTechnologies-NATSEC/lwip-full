@@ -340,6 +340,7 @@ lwip_socket_thread_cleanup(void)
    netconn_thread_cleanup();
 }
 
+
 /**
  * Map a externally used socket index to the internal socket representation.
  *
@@ -368,6 +369,44 @@ get_socket(int s)
   }
 
   return sock;
+}
+
+ /*
+ * Helper function to allow figuring out what the socket is currently up to.
+ * The FTP state machine works best if it can track the health of the connection
+ * and it is not possible to do this unambiguously with out this.
+ *
+ * The normal values returned are:
+ *
+ *   CLOSED      = 0,
+ *   LISTEN      = 1,
+ *   SYN_SENT    = 2,
+ *   SYN_RCVD    = 3,
+ *   ESTABLISHED = 4,
+ *   FIN_WAIT_1  = 5,
+ *   FIN_WAIT_2  = 6,
+ *   CLOSE_WAIT  = 7,
+ *   CLOSING     = 8,
+ *   LAST_ACK    = 9,
+ *   TIME_WAIT   = 10
+ *
+ *  If we can't read the current state we return -1.
+ */
+
+
+enum tcp_state getsockstate(int s)
+{
+    enum tcp_state ret_val;
+    struct lwip_sock *sock = get_socket(s);
+
+    ret_val = -1;
+
+    if(sock && sock->conn && sock->conn->pcb.tcp)
+    {
+        ret_val = sock->conn->pcb.tcp->state;
+    }
+
+  return(ret_val);
 }
 
 /**
@@ -770,6 +809,7 @@ lwip_recvfrom(int s, void *mem, size_t len, int flags,
           return off;
         }
         LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_recvfrom(%d): returning EWOULDBLOCK\n", s));
+        sock_set_errno(sock,  EWOULDBLOCK);
         set_errno(EWOULDBLOCK);
         return -1;
       }
