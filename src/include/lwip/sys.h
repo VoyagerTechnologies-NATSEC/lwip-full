@@ -256,6 +256,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg);
  * @param msg message to post (ATTENTION: can be NULL)
  */
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg);
+err_t sys_mbox_trypost_isr(sys_mbox_t *mbox, void *msg);
 /**
  * @ingroup sys_mbox
  * Wait for a new message to arrive in the mbox
@@ -347,7 +348,9 @@ u32_t sys_jiffies(void);
  * Returns the current time in milliseconds,
  * may be the same as sys_jiffies or at least based on it.
  */
-u32_t sys_now(void);
+
+#define sys_now() (xTaskGetTickCount() * portTICK_PERIOD_MS)
+//u32_t sys_now(void);
 
 /* Critical Region Protection */
 /* These functions must be implemented in the sys_arch.c file.
