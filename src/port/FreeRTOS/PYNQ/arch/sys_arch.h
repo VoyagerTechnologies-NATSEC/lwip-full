@@ -36,6 +36,7 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "timers.h"   /* TimerHandle_t, used by netif/xadapter.h */
 
 #define SYS_MBOX_NULL (xQueueHandle)0
 #define SYS_SEM_NULL  (xSemaphoreHandle)0

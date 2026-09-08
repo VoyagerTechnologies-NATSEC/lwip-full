@@ -34,6 +34,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+/* lwipopts.h sets LWIP_TIMEVAL_PRIVATE 0, so lwip/sockets.h expects the
+ * toolchain's struct timeval. Newlib in Vitis 2024.2 no longer exposes it
+ * through the stdio include chain, so pull it in explicitly. */
+#include <sys/time.h>
 
 #include "cpu.h"
 

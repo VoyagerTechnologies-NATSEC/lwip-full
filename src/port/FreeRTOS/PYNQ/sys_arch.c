@@ -54,6 +54,12 @@ static unsigned int exec_within_isr(void)
 	return ulPortInterruptNesting;
 }
 
+/* The Xilinx xemacpsif driver brackets its ISR paths with xInsideISR++/--
+ * so the vendor sys_arch can pick FromISR call variants. This port detects
+ * ISR context through ulPortInterruptNesting instead, so the counter is
+ * write-only here -- defined only to satisfy the driver's externs. */
+u32_t xInsideISR = 0;
+
 /*------------------------------------------------------------------------------
   Creates an empty mailbox for maximum "size" elements. Elements stored
   in mailboxes are pointers. You have to define macros "_MBOX_SIZE"

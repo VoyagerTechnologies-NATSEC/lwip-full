@@ -1329,7 +1329,7 @@
  * sys_thread_new() when the thread is created.
  */
 #ifndef TCPIP_THREAD_STACKSIZE
-#define TCPIP_THREAD_STACKSIZE          16384 /* 400 */
+#define TCPIP_THREAD_STACKSIZE          4096
 #endif
 
 /**
@@ -1396,7 +1396,7 @@
  * sys_thread_new() when the thread is created.
  */
 #ifndef DEFAULT_THREAD_STACKSIZE
-#define DEFAULT_THREAD_STACKSIZE        16384 /* 400 */
+#define DEFAULT_THREAD_STACKSIZE        4096
 #endif
 
 /**
@@ -1849,7 +1849,7 @@
  * CHECKSUM_GEN_UDP==1: Generate checksums in software for outgoing UDP packets.
  */
 #ifndef CHECKSUM_GEN_UDP
-#define CHECKSUM_GEN_UDP                0 // Fixme: PMCS
+#define CHECKSUM_GEN_UDP                1 /* RMCP is UDP; peers drop unchecksummed datagrams */
 #endif
 
 /**
@@ -1884,7 +1884,7 @@
  * CHECKSUM_CHECK_UDP==1: Check checksums in software for incoming UDP packets.
  */
 #ifndef CHECKSUM_CHECK_UDP
-#define CHECKSUM_CHECK_UDP              0 // Fixme: PMCS
+#define CHECKSUM_CHECK_UDP              1
 #endif
 
 /**
