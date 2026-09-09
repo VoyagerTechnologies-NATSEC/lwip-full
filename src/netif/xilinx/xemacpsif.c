@@ -258,6 +258,11 @@ static err_t xemacpsif_output(struct netif *netif, struct pbuf *p,
  *
  */
 
+#if XEMACPS_DIAG_COUNTERS
+volatile u32_t xemacpsif_in_frames = 0;
+volatile u32_t xemacpsif_in_last_type = 0;
+#endif
+
 s32_t xemacpsif_input(struct netif *netif)
 {
 	struct eth_hdr *ethhdr;
@@ -280,6 +285,10 @@ s32_t xemacpsif_input(struct netif *netif)
 
 		/* points to packet payload, which starts with an Ethernet header */
 		ethhdr = p->payload;
+#if XEMACPS_DIAG_COUNTERS
+		xemacpsif_in_frames++;
+		xemacpsif_in_last_type = htons(ethhdr->type);
+#endif
 
 	#if LINK_STATS
 		lwip_stats.link.recv++;

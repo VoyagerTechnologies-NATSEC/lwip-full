@@ -120,16 +120,28 @@
 #endif
 
 /**
- * MEM_ALIGNMENT: should be set to the alignment of the CPU
- *    4 byte alignment -> #define MEM_ALIGNMENT 4
- *    2 byte alignment -> #define MEM_ALIGNMENT 2
+ * XEMACPS_DIAG_COUNTERS: 1 compiles per-hop RX counters into the Xilinx GEM
+ * driver (xemacpsif_dma.c / xemacpsif.c / xemacpsif_hw.c) and the 5 s
+ * "gemdiag" register dump task in the application (main.c). Used on
+ * 2026-09-09 to prove frames were reaching the MAC and ISR intact but
+ * arriving in lwIP with a zeroed Ethernet header (see MEM_ALIGNMENT).
+ */
+#ifndef XEMACPS_DIAG_COUNTERS
+#define XEMACPS_DIAG_COUNTERS           0
+#endif
+
+/**
+ * MEM_ALIGNMENT: 64 on Zynq, as the Xilinx lwIP BSP generator sets it
+ * (lwip213.tcl). The GEM RX path DMAs straight into PBUF_POOL payloads and
+ * Xil_DCacheInvalidateRange() *cleans* any partially covered 32-byte line
+ * before invalidating. With 8-byte alignment the pbuf header and the first
+ * 16 payload bytes share a line; pbuf_realloc() dirties it right before the
+ * invalidate in emacps_recv_handler(), and the clean writes stale zeros over
+ * the DMA'd MACs and ethertype (seen as lasttype=0x0000 on the bench). A
+ * 64-byte alignment puts the payload on its own cache lines.
  */
 #ifndef MEM_ALIGNMENT
-#ifdef __riscv64
-#define MEM_ALIGNMENT                   8
-#else
-#define MEM_ALIGNMENT                   8
-#endif
+#define MEM_ALIGNMENT                   64
 #endif
 
 /**
@@ -2269,7 +2281,7 @@
  * NETIF_DEBUG: Enable debugging in netif.c.
  */
 #ifndef NETIF_DEBUG
-#define NETIF_DEBUG                     LWIP_DBG_OFF
+#define NETIF_DEBUG                     LWIP_DBG_OFF  /* turn on for xemacpsif init/PHY messages */
 #endif
 
 /**

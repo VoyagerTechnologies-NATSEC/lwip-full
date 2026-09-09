@@ -210,8 +210,14 @@ void restart_emacps_transmitter (xemacpsif_s *xemacps) {
 										XEMACPS_NWCTRL_OFFSET, Reg);
 }
 
+#if XEMACPS_DIAG_COUNTERS
+extern volatile u32_t emacps_err_isr_count;   /* xemacpsif_dma.c */
+#endif
 void emacps_error_handler(void *arg,u8 Direction, u32 ErrorWord)
 {
+#if XEMACPS_DIAG_COUNTERS
+	emacps_err_isr_count++;
+#endif
 	struct xemac_s *xemac;
 	xemacpsif_s   *xemacpsif;
 	XEmacPs_BdRing *rxring;

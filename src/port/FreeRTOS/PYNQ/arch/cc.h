@@ -43,11 +43,12 @@
 
 #include "ipmc_ios.h"
 
-#define U16_F "hu"
-#define X16_F "hX"
+#define X8_F  "02x" /* xil_printf has no "hh"/"h" modifiers */
+#define U16_F "u"
+#define X16_F "X"
 #define U32_F "u"
 #define X32_F "X"
-#define S16_F "hd"
+#define S16_F "d"
 #define S32_F "d"
 
 #if 0
@@ -63,15 +64,21 @@ typedef u32_t mem_ptr_t;
 typedef int sys_prot_t;
 
 
-#define PACK_STRUCT_BEGIN
-#define PACK_STRUCT_STRUCT
-#define PACK_STRUCT_END
-#define PACK_STRUCT_FIELD(x) x
+/* Struct packing: leave the PACK_STRUCT_* macros to lwip/arch.h, which picks
+ * __attribute__((packed)) for GCC. Defining them empty here (as a Cortex-M
+ * port that packed via compiler flags did) left ip_hdr/eth_hdr unpacked, and
+ * lwip_init() then parks on its "Struct packing not implemented correctly"
+ * assert before the netif is ever added. */
 
 #define LWIP_PLATFORM_DIAG(_x_) do { ipmc_ios_printf _x_; } while (0)
 
 
-#define LWIP_PLATFORM_ASSERT(x) while(1);
+#include "xil_printf.h"
+/* Print before parking: a bare while(1) here made failed asserts in the
+ * network init path indistinguishable from a task that never ran. */
+#define LWIP_PLATFORM_ASSERT(x) do { \
+    xil_printf("lwip assert: %s (%s:%d)\r\n", x, __FILE__, __LINE__); \
+    while(1); } while(0)
 #if 0
 #define LWIP_PLATFORM_ASSERT(x) do { \
     unsigned char const * p_msg = (unsigned char const *)x; \

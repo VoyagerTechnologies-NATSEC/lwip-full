@@ -56,8 +56,12 @@ static unsigned int exec_within_isr(void)
 
 /* The Xilinx xemacpsif driver brackets its ISR paths with xInsideISR++/--
  * so the vendor sys_arch can pick FromISR call variants. This port detects
- * ISR context through ulPortInterruptNesting instead, so the counter is
- * write-only here -- defined only to satisfy the driver's externs. */
+ * ISR context through ulPortInterruptNesting (exec_within_isr()) instead, so
+ * the counter is write-only here -- defined only to satisfy the driver's
+ * externs. Every sys_* entry the GEM ISR can reach must honour that check:
+ * sys_mbox_trypost (tcpip_input), sys_sem_signal (RX data available) and
+ * sys_arch_protect/unprotect (pbuf/memp from setup_rx_bds and pbuf_free).
+ * The CA9 port asserts in vPortEnterCritical() otherwise (port.c:592). */
 u32_t xInsideISR = 0;
 
 /*------------------------------------------------------------------------------
@@ -154,7 +158,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
         /* sys_mbox_trypost called as part of an interrupt service routine. */
         queue_ret_val = xQueueSendToBackFromISR(*mbox, &msg, &xHigherPriorityTaskWoken);
         
-//        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         if(pdFALSE != xHigherPriorityTaskWoken)
         {
         	g_mac_context_switch = pdTRUE;
@@ -193,7 +197,7 @@ err_t sys_mbox_trypost_isr(sys_mbox_t *mbox, void *msg)
 	/* sys_mbox_trypost called as part of an interrupt service routine. */
 	queue_ret_val = xQueueSendToBackFromISR(*mbox, &msg, &xHigherPriorityTaskWoken);
 
-//        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	if(pdFALSE != xHigherPriorityTaskWoken)
 	{
 		g_mac_context_switch = pdTRUE;
@@ -377,7 +381,17 @@ portTickType StartTime, EndTime, Elapsed;
 */
 void sys_sem_signal(sys_sem_t *sem)
 {
-    xSemaphoreGive(*sem);
+    if (exec_within_isr())
+    {
+        /* GEM RX ISR -> sys_sem_signal(&sem_rx_data_available) */
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xSemaphoreGiveFromISR(*sem, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+    else
+    {
+        xSemaphoreGive(*sem);
+    }
 }
 
 /*------------------------------------------------------------------------------
@@ -452,10 +466,20 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
   system.
 */
 sys_prot_t sys_arch_protect(void);
+/* Bit set in the returned sys_prot_t when the ISR-safe mask path was taken;
+ * the low bits then carry ulPortSetInterruptMask()'s previous-state value. */
+#define SYS_PROT_FROM_ISR 0x100
+
 sys_prot_t sys_arch_protect(void)
 {
+    if (exec_within_isr())
+    {
+        /* pbuf_free()/pbuf_alloc(PBUF_POOL) from the GEM ISR reach memp via
+         * SYS_ARCH_PROTECT; vPortEnterCritical() is task-only in the CA9 port. */
+        return (sys_prot_t)(SYS_PROT_FROM_ISR | ulPortSetInterruptMask());
+    }
     vPortEnterCritical();
-    return 1;
+    return 0;
 }
 
 /*------------------------------------------------------------------------------
@@ -467,8 +491,10 @@ sys_prot_t sys_arch_protect(void)
 void sys_arch_unprotect(sys_prot_t pval);
 void sys_arch_unprotect(sys_prot_t pval)
 {
-    (void) pval;
-    vPortExitCritical();
+    if (pval & SYS_PROT_FROM_ISR)
+        vPortClearInterruptMask((uint32_t)(pval & ~SYS_PROT_FROM_ISR));
+    else
+        vPortExitCritical();
 }
 
 uint32_t sys_arch_random(void)

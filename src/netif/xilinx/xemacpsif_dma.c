@@ -125,6 +125,14 @@ static volatile u32_t bd_space_attr_set = 0;
 
 #if !NO_SYS
 extern u32 xInsideISR;
+#if XEMACPS_DIAG_COUNTERS
+/* Per-hop RX counters read by the NETDIAG task in main.c. */
+volatile u32_t emacps_rx_isr_count = 0;
+volatile u32_t emacps_err_isr_count = 0;
+volatile u32_t emacps_rx_frames_queued = 0;   /* pbufs handed to recv_q */
+volatile u32_t emacps_rx_last_len = 0;
+volatile u32_t emacps_rx_last_type = 0;
+#endif
 #endif
 
 #define XEMACPS_BD_TO_INDEX(ringptr, bdptr)				\
@@ -498,6 +506,9 @@ void setup_rx_bds(xemacpsif_s *xemacpsif, XEmacPs_BdRing *rxring)
 
 void emacps_recv_handler(void *arg)
 {
+#if XEMACPS_DIAG_COUNTERS
+	emacps_rx_isr_count++;
+#endif
 	struct pbuf *p;
 	XEmacPs_Bd *rxbdset, *curbdptr;
 	struct xemac_s *xemac;
@@ -562,6 +573,11 @@ void emacps_recv_handler(void *arg)
 			/* store it in the receive queue,
 			 * where it'll be processed by a different handler
 			 */
+#if XEMACPS_DIAG_COUNTERS
+			emacps_rx_frames_queued++;
+			emacps_rx_last_len = (u32_t)rx_bytes;
+			emacps_rx_last_type = ((u32_t)((u8_t *)p->payload)[12] << 8) | ((u8_t *)p->payload)[13];
+#endif
 			if (pq_enqueue(xemacpsif->recv_q, (void*)p) < 0) {
 #if LINK_STATS
 				lwip_stats.link.memerr++;
