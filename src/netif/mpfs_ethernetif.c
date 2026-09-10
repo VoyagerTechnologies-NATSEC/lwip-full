@@ -202,6 +202,8 @@ low_level_init(struct netif *netif)
     /* We only have one network Interface */
     /* Initialize the Network interface */
     netif->num = 1;
+    if (netif->hwaddr_len != 6)   /* not preset by the application */
+    {
     netif->hwaddr[0] = 0x00;
     netif->hwaddr[1] = 0xFC;
     netif->hwaddr[2] = 0x00;
@@ -213,6 +215,7 @@ low_level_init(struct netif *netif)
     netif->hwaddr[5] = 0x56;
 #endif
     netif->hwaddr_len = 6; /* Defined in LWIP ETHARP_HWADDR_LEN; */
+    }
 
     /* maximum transfer unit */
     netif->mtu = 1500;

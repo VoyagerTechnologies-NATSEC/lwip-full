@@ -45,9 +45,13 @@
   Returns non-zero if executing as part of an interrupt service routine. Returns zero
   otherwise.
 */
+/* Maintained by the application's external-interrupt entry (main.c). mip is
+ * not usable here: the PLIC claim clears MEIP before the MAC callbacks run. */
+volatile uint32_t lwip_isr_nesting = 0;
+
 static unsigned int exec_within_isr(void)
 {
-	return ( (read_csr(mip) & (MIP_MSIP |	MIP_MTIP | MIP_MEIP)));
+	return lwip_isr_nesting;
 }
 
 /*------------------------------------------------------------------------------
@@ -367,7 +371,19 @@ portTickType StartTime, EndTime, Elapsed;
 */
 void sys_sem_signal(sys_sem_t *sem)
 {
-    xSemaphoreGive(*sem);
+    if (exec_within_isr())
+    {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xSemaphoreGiveFromISR(*sem, &xHigherPriorityTaskWoken);
+        if (pdFALSE != xHigherPriorityTaskWoken)
+        {
+            g_mac_context_switch = pdTRUE;
+        }
+    }
+    else
+    {
+        xSemaphoreGive(*sem);
+    }
 }
 
 /*------------------------------------------------------------------------------
@@ -444,7 +460,11 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
 sys_prot_t sys_arch_protect(void);
 sys_prot_t sys_arch_protect(void)
 {
-    vPortEnterCritical();
+    /* Trap entry already masked interrupts; portEXIT_CRITICAL would unmask
+     * them inside the ISR, so protection is a no-op there. */
+    if (exec_within_isr())
+        return 0;
+    portENTER_CRITICAL();
     return 1;
 }
 
@@ -457,8 +477,8 @@ sys_prot_t sys_arch_protect(void)
 void sys_arch_unprotect(sys_prot_t pval);
 void sys_arch_unprotect(sys_prot_t pval)
 {
-    (void) pval;
-    vPortExitCritical();
+    if (pval)
+        portEXIT_CRITICAL();
 }
 
 uint32_t sys_arch_random(void)

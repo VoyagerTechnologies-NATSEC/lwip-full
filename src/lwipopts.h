@@ -140,7 +140,7 @@
 #ifdef RUN_IN_DDR
 #define MEM_SIZE                        2600000 /* 26000 */
 #else
-#define MEM_SIZE                        2600
+#define MEM_SIZE                        16384   /* LIM build: RMCP replies are PBUF_RAM, a few hundred bytes each */
 #endif
 #endif
 
@@ -375,7 +375,7 @@
 #ifdef RUN_IN_DDR
 #define PBUF_POOL_SIZE                  100 /* 40 */
 #else
-#define PBUF_POOL_SIZE                  8
+#define PBUF_POOL_SIZE                  16      /* = MSS_MAC_RX_RING_SIZE */
 #endif
 #endif
 
@@ -1849,7 +1849,7 @@
  * CHECKSUM_GEN_UDP==1: Generate checksums in software for outgoing UDP packets.
  */
 #ifndef CHECKSUM_GEN_UDP
-#define CHECKSUM_GEN_UDP                0 // Fixme: PMCS
+#define CHECKSUM_GEN_UDP                1
 #endif
 
 /**
@@ -1884,7 +1884,7 @@
  * CHECKSUM_CHECK_UDP==1: Check checksums in software for incoming UDP packets.
  */
 #ifndef CHECKSUM_CHECK_UDP
-#define CHECKSUM_CHECK_UDP              0 // Fixme: PMCS
+#define CHECKSUM_CHECK_UDP              1
 #endif
 
 /**

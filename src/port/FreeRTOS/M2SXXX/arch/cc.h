@@ -61,14 +61,16 @@ typedef int sys_prot_t;
 
 
 #define PACK_STRUCT_BEGIN
-#define PACK_STRUCT_STRUCT
+#define PACK_STRUCT_STRUCT __attribute__((packed))
 #define PACK_STRUCT_END
 #define PACK_STRUCT_FIELD(x) x
 
 #define LWIP_PLATFORM_DIAG(_x_) do { ipmc_ios_printf _x_; } while (0)
 
 
-#define LWIP_PLATFORM_ASSERT(x) while(1);
+#define LWIP_PLATFORM_ASSERT(x) do { \
+    ipmc_ios_printf("lwip assert: %s (%s:%d)\r\n", x, __FILE__, __LINE__); \
+    while(1); } while(0)
 #if 0
 #define LWIP_PLATFORM_ASSERT(x) do { \
     unsigned char const * p_msg = (unsigned char const *)x; \
@@ -86,9 +88,9 @@ uint32_t sys_arch_random(void);
 
 #define LWIP_PLATFORM_BYTESWAP 1
 
-#define LWIP_PLATFORM_HTONS(x) __REV16(x)
+#define LWIP_PLATFORM_HTONS(x) __builtin_bswap16(x)
 
-#define LWIP_PLATFORM_HTONL(x) __REV(x)
+#define LWIP_PLATFORM_HTONL(x) __builtin_bswap32(x)
 
 uint16_t lwip_cortem_chksum(const void *dataptr, int len);
 #if !defined(_ZL303XX_MIV)
