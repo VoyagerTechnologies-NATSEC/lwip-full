@@ -2271,17 +2271,32 @@
 #endif
 
 /**
+ * IPMC_LWIP_DEBUG==1 turns on the module groups useful for bring-up (netif,
+ * ARP, IP, ICMP, UDP, DHCP, tcpip thread); everything else stays off. Set with
+ * -DIPMC_LWIP_DEBUG=1, which the IPMC's build_freertos.py exports from
+ * `--debug lwip`. Output goes through LWIP_PLATFORM_DIAG -> ipmc_ios_printf.
+ */
+#ifndef IPMC_LWIP_DEBUG
+#define IPMC_LWIP_DEBUG                 0
+#endif
+#if IPMC_LWIP_DEBUG
+#define IPMC_LWIP_DBG                   LWIP_DBG_ON
+#else
+#define IPMC_LWIP_DBG                   LWIP_DBG_OFF
+#endif
+
+/**
  * ETHARP_DEBUG: Enable debugging in etharp.c.
  */
 #ifndef ETHARP_DEBUG
-#define ETHARP_DEBUG                    LWIP_DBG_OFF
+#define ETHARP_DEBUG                    IPMC_LWIP_DBG
 #endif
 
 /**
  * NETIF_DEBUG: Enable debugging in netif.c.
  */
 #ifndef NETIF_DEBUG
-#define NETIF_DEBUG                     LWIP_DBG_OFF  /* turn on for xemacpsif init/PHY messages */
+#define NETIF_DEBUG                     IPMC_LWIP_DBG  /* turn on for xemacpsif init/PHY messages */
 #endif
 
 /**
@@ -2316,7 +2331,7 @@
  * ICMP_DEBUG: Enable debugging in icmp.c.
  */
 #ifndef ICMP_DEBUG
-#define ICMP_DEBUG                      LWIP_DBG_OFF
+#define ICMP_DEBUG                      IPMC_LWIP_DBG
 #endif
 
 /**
@@ -2337,7 +2352,7 @@
  * IP_DEBUG: Enable debugging for IP.
  */
 #ifndef IP_DEBUG
-#define IP_DEBUG                        LWIP_DBG_OFF
+#define IP_DEBUG                        IPMC_LWIP_DBG
 #endif
 
 /**
@@ -2450,14 +2465,14 @@
  * UDP_DEBUG: Enable debugging in UDP.
  */
 #ifndef UDP_DEBUG
-#define UDP_DEBUG                       LWIP_DBG_OFF
+#define UDP_DEBUG                       IPMC_LWIP_DBG
 #endif
 
 /**
  * TCPIP_DEBUG: Enable debugging in tcpip.c.
  */
 #ifndef TCPIP_DEBUG
-#define TCPIP_DEBUG                     LWIP_DBG_OFF
+#define TCPIP_DEBUG                     IPMC_LWIP_DBG
 #endif
 
 /**
@@ -2471,7 +2486,7 @@
  * DHCP_DEBUG: Enable debugging in dhcp.c.
  */
 #ifndef DHCP_DEBUG
-#define DHCP_DEBUG                      LWIP_DBG_OFF
+#define DHCP_DEBUG                      IPMC_LWIP_DBG
 #endif
 
 /**
