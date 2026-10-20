@@ -436,7 +436,7 @@ low_level_init(struct netif *netif)
     g_mac_config.phy_set_link_speed    = MSS_MAC_RTL8211_phy_set_link_speed;
     g_mac_config.phy_extended_read     = mmd_read_extended_regs;
     g_mac_config.phy_extended_write    = mmd_write_extended_regs;
-    g_mac_config.use_local_ints        = MSS_MAC_ENABLE;
+    g_mac_config.use_local_ints        = MSS_MAC_DISABLE;
 
 #endif
 
